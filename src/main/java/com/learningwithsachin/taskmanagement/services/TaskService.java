@@ -1,18 +1,19 @@
 package com.learningwithsachin.taskmanagement.services;
 
+import com.learningwithsachin.taskmanagement.dto.TaskDTO;
 import com.learningwithsachin.taskmanagement.model.Task;
 
 import java.util.List;
 
 public interface TaskService {
 
-	boolean saveTask(Task task);
+    TaskDTO saveTask(Task task);
 
-	List<Task> getTasks();
+    List<TaskDTO> getTasks();
 
-	Task getTaskById(String id);
+    TaskDTO getTaskById(Long id);
 
-	boolean deleteTaskById(String id);
+    boolean deleteTaskById(Long id);
 
-	boolean updateTaskById(String id);
+    TaskDTO updateTaskById(Long id, TaskDTO taskDTO);
 }

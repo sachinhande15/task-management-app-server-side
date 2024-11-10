@@ -1,73 +1,98 @@
 package com.learningwithsachin.taskmanagement.services;
 
-import com.learningwithsachin.taskmanagement.exception.UserAlreadyExistsException;
+import com.learningwithsachin.taskmanagement.dto.UserUpdateDTO;
+import com.learningwithsachin.taskmanagement.exception.UserNotFoundException;
 import com.learningwithsachin.taskmanagement.model.User;
 import com.learningwithsachin.taskmanagement.repository.UserRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
 public class UserServiceImpl implements UserService {
 
-	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
-	private final UserRepo userRepo;
-	private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRepo userRepo;
 
-	@Autowired
-	 public UserServiceImpl (UserRepo userRepo, PasswordEncoder passwordEncoder) {
-		this.userRepo = userRepo;
-		this.passwordEncoder = passwordEncoder;
-	}
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-	@Override
-	public boolean saveUser (User user) {
-		User foundUser = userRepo.findByusername(user.getUsername());
-		if ( foundUser == null ) {
-			String encodedPassword = passwordEncoder.encode(user.getPassword());
-			user.setPassword(encodedPassword);
-			userRepo.save(user);
-			logger.info("user saved in the database successfully");
-			return true;
-		}
-		throw new UserAlreadyExistsException("User with username "+ user.getUsername() +" "+"already exists.");
-	}
+    @Cacheable("users")
+    @Override
+    public List<User> getUsers() {
+        logger.info("Getting users from the database");
+        return userRepo.findAll().stream().map(
+                user -> {
+                    User user1 = new User();
+                    user1.setUsername(user.getUsername());
+                    user1.setId(user.getId());
+                    return user1;
+                }
+        ).collect(Collectors.toList());
+    }
 
-	@Override
-	public List<User> getUsers () {
-		return userRepo.findAll();
-	}
+    @Override
+    public User getUserById(Long id) {
+        return getUserWithId(id);
+    }
 
-	@Override
-	public User getUserById (String id) {
-		return null;
-	}
+    private User getUserWithId(Long id) {
+        User user = userRepo.findById(id).orElseThrow(() ->
+                new UserNotFoundException("User not found with ID :" + id)
+        );
+        return user;
+    }
 
-	@Override
-	public boolean deleteUserById (String id) {
-		return false;
-	}
+    @Override
+    @CacheEvict
+    public boolean deleteUserById(Long id) {
+        User user = getUserWithId(id);
+        userRepo.deleteById(user.getId());
+        logger.info("user deleted successfully");
+        return true;
+    }
 
-	@Override
-	public boolean updateUserById (String id) {
-		return false;
-	}
+    @Override
+    public boolean updateUserById(Long id, UserUpdateDTO userUpdateDTO) {
 
-	@Override
-	public boolean authenticateUser (User user) {
-		User foundUser = userRepo.findByusername(user.getUsername());
-		if ( foundUser == null ) return false;
-		return verifyPassword(user.getPassword(), foundUser.getPassword());
-	}
+        Optional<User> existingUserOpt = userRepo.findById(id);
 
-	// Method to verify password during login
-	public boolean verifyPassword (String rawPassword, String encodedPassword) {
-		return passwordEncoder.matches(rawPassword, encodedPassword);
-	}
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            if (userUpdateDTO.getFirstName() != null) {
+                existingUser.setFirstName(userUpdateDTO.getFirstName());
+            }
+            if (userUpdateDTO.getLastName() != null) {
+                existingUser.setLastName(userUpdateDTO.getLastName());
+            }
+            if (userUpdateDTO.getEmailId() != null) {
+                existingUser.setEmailId(userUpdateDTO.getEmailId());
+            }
+            userRepo.save(existingUser);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean updatePassword(String emailId, String password) {
+        User user = userRepo.findByEmailId(emailId).orElseThrow(() ->
+                new UsernameNotFoundException("No user is associated with emailId : " + emailId));
+        user.setPassword(passwordEncoder.encode(password));
+        userRepo.save(user);
+        logger.info("Password is updated successfully");
+        return true;
+    }
 }

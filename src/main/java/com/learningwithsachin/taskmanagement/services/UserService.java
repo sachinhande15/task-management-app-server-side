@@ -1,20 +1,19 @@
 package com.learningwithsachin.taskmanagement.services;
 
+import com.learningwithsachin.taskmanagement.dto.UserUpdateDTO;
 import com.learningwithsachin.taskmanagement.model.User;
 
 import java.util.List;
 
 public interface UserService {
 
-	boolean saveUser(User user);
+    List<User> getUsers();
 
-	List<User> getUsers();
+    User getUserById(Long id);
 
-	User getUserById(String id);
+    boolean deleteUserById(Long id);
 
-	boolean deleteUserById(String id);
+    boolean updateUserById(Long id, UserUpdateDTO userUpdateDTO);
 
-	boolean updateUserById(String id);
-
-	boolean authenticateUser(User user);
+    boolean updatePassword(String emailId, String password);
 }

@@ -1,6 +1,7 @@
 package com.learningwithsachin.taskmanagement.controller;
 
 
+import com.learningwithsachin.taskmanagement.dto.UserUpdateDTO;
 import com.learningwithsachin.taskmanagement.model.User;
 import com.learningwithsachin.taskmanagement.services.UserService;
 import com.learningwithsachin.taskmanagement.utilities.RequestValidator;
@@ -14,6 +15,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,45 +23,69 @@ import java.util.Map;
 @RequestMapping("/api/v1")
 public class UserController {
 
-	private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-	private final UserService userService;
+    private final UserService userService;
 
+    private final RequestValidator requestValidator;
 
-	private final RequestValidator requestValidator;
+    @Autowired
+    public UserController(UserService userService, RequestValidator requestValidator) {
+        this.userService = userService;
+        this.requestValidator = requestValidator;
+    }
 
+    @GetMapping("/users")
+    public ResponseEntity<Object> fetchUsers() {
+        List<User> userList = userService.getUsers();
+        if (userList.isEmpty()) {
+            logger.warn("No user found");
+            return ResponseHandler.generateResponse("No users found", HttpStatus.NOT_FOUND, null);
+        }
+        Map<String, Object> usersMap = new HashMap<>(userList.size());
+        usersMap.put("users", userList);
+        logger.info("getting users...");
+        return ResponseHandler.generateResponse("users list ", HttpStatus.OK, usersMap);
+    }
 
-	@Autowired
-	public UserController (UserService userService, RequestValidator requestValidator) {
-		this.userService = userService;
-		this.requestValidator = requestValidator;
-	}
+    @GetMapping("/user/{id}")
+    public ResponseEntity<Object> deleteUser(@PathVariable Long id) {
+        Map<String, String> errors = requestValidator.validate(id);
+        if (!errors.isEmpty()) {
+            return ResponseHandler.generateResponse("Validation failed", HttpStatus.BAD_REQUEST, errors);
+        }
+        userService.deleteUserById(id);
+        return ResponseHandler.generateResponse("User deleted successfully", HttpStatus.OK, null);
+    }
 
-	@GetMapping("/users")
-	public ResponseEntity<?> getAllUsers () {
-		List<User> userList = userService.getUsers();
-		if ( userList.isEmpty() ) {
-			logger.warn("No user found");
-			return ResponseHandler.generateResponse("No users found", HttpStatus.NOT_FOUND, null);
-		}
-		logger.info("getting users...");
-		return ResponseHandler.generateResponse("users list ", HttpStatus.OK, userList);
-	}
+    @PutMapping("/user/{id}")
+    public ResponseEntity<Object> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateDTO userUpdateDTO, BindingResult result) {
+        Map<String, String> errors = requestValidator.validate(result, id);
+        if (!errors.isEmpty()) {
+            return ResponseHandler.generateResponse("Validation failed", HttpStatus.BAD_REQUEST, errors);
+        }
+        boolean updateSuccess = userService.updateUserById(id, userUpdateDTO);
+        if (updateSuccess) {
+            return ResponseHandler.generateResponse("User updated successfully", HttpStatus.OK, true);
+        }
+        return ResponseHandler.generateResponse("User not found", HttpStatus.NOT_FOUND, false);
+    }
 
-	@PostMapping("/register")
-	public ResponseEntity<?> addUser (@Valid @RequestBody User user, BindingResult result) {
+    @PutMapping("/updatePassword")
+    public ResponseEntity<Object> updateUserPassword(@RequestBody Map<String, String> request) {
 
-		Map<String, String> errors = requestValidator.validate(result);
-		if ( !errors.isEmpty() ) {
-			return ResponseHandler.generateResponse("Validation failed", HttpStatus.BAD_REQUEST, errors);
-		}
-		boolean userSaved = userService.saveUser(user);
-		if ( userSaved ) {
+        String emailId = request.get("emailId");
+        String newPassword = request.get("password");
 
-			return ResponseHandler.generateResponse("User registered ", HttpStatus.CREATED, true);
-		}
-		logger.warn("User registration failed: User could not be saved.");
-		return ResponseHandler.generateResponse("User registration failed", HttpStatus.INTERNAL_SERVER_ERROR, false);
-	}
+        // Check if emailId and newPassword are not null or empty
+        if (emailId == null || emailId.isEmpty()) {
+            return ResponseHandler.generateResponse("Email ID is required", HttpStatus.BAD_REQUEST, null);
+        }
+        if (newPassword == null || newPassword.isEmpty()) {
+            return ResponseHandler.generateResponse("New password is required", HttpStatus.BAD_REQUEST, null);
+        }
+        return ResponseHandler.generateResponse("Password updated successful", HttpStatus.OK, userService.updatePassword(emailId, newPassword));
+    }
+
 
 }
