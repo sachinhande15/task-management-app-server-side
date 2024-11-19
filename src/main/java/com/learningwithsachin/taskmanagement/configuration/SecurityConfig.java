@@ -32,6 +32,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                .cors()
+                .and()
                 .csrf(AbstractHttpConfigurer::disable) // Optional: Disable CSRF if it's not needed for testing
                 .authorizeRequests()
                 .antMatchers("/public/**", "/api/v1/auth/register", "/api/v1/auth/login") // Define routes to be publicly accessible

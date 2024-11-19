@@ -21,6 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1")
+@CrossOrigin
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);

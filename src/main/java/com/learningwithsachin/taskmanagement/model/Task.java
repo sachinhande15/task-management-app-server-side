@@ -30,7 +30,7 @@ public class Task {
     private String description;
 
     @Column(name = "due_date")
-    @JsonFormat(pattern = "MM/dd/yyyy")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dueDate;
 
 

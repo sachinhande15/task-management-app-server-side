@@ -12,10 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.HashMap;
@@ -23,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@CrossOrigin
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -47,7 +45,7 @@ public class AuthController {
         boolean userSaved = authService.register(user);
         if (userSaved) {
 
-            return ResponseHandler.generateResponse("User registered ", HttpStatus.CREATED, true);
+            return ResponseHandler.generateResponse("Account created successfully!", HttpStatus.CREATED, true);
         }
         logger.warn("User registration failed: User could not be saved.");
         return ResponseHandler.generateResponse("User registration failed", HttpStatus.INTERNAL_SERVER_ERROR, false);
@@ -61,7 +59,7 @@ public class AuthController {
         }
         String jwtToken = authService.login(authRequest).getJwt();
         Map<String, String> tokenData = new HashMap<>();
-        tokenData.put("Bearer", jwtToken);
+        tokenData.put("token", jwtToken);
 
         return ResponseHandler.generateResponse("Login successful", HttpStatus.OK, tokenData);
     }
