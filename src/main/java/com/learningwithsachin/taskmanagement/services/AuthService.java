@@ -3,12 +3,15 @@ package com.learningwithsachin.taskmanagement.services;
 
 import com.learningwithsachin.taskmanagement.dto.AuthRequest;
 import com.learningwithsachin.taskmanagement.dto.AuthResponse;
+import com.learningwithsachin.taskmanagement.dto.UserDTO;
 import com.learningwithsachin.taskmanagement.exception.UserAlreadyExistsException;
+import com.learningwithsachin.taskmanagement.exception.UserNotFoundException;
 import com.learningwithsachin.taskmanagement.model.User;
 import com.learningwithsachin.taskmanagement.repository.UserRepo;
 import com.learningwithsachin.taskmanagement.utilities.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.util.Pair;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -49,12 +52,15 @@ public class AuthService {
         throw new UserAlreadyExistsException("User with username " + user.getUsername() + " " + "already exists.");
     }
 
-    public AuthResponse login(AuthRequest request) {
+    public Pair<AuthResponse, UserDTO > login(AuthRequest request) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.getUsername(), request.getPassword()
         ));
         String jwtToken = jwtUtil.generateToken(request.getUsername());
-        return new AuthResponse(jwtToken);
+
+        User user = userRepo.findByusername(request.getUsername()).orElseThrow(()-> new UserNotFoundException("User Not found"));
+
+        return Pair.of(new AuthResponse(jwtToken), UserDTO.fromUser(user));
     }
 
     public User getAuthenticatedUser() {

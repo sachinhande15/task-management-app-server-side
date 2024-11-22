@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .and()
                 .csrf(AbstractHttpConfigurer::disable) // Optional: Disable CSRF if it's not needed for testing
                 .authorizeRequests()
-                .antMatchers("/public/**", "/api/v1/auth/register", "/api/v1/auth/login") // Define routes to be publicly accessible
+                .antMatchers("/public/**", "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/updatePassword") // Define routes to be publicly accessible
                 .permitAll()
                 .anyRequest()
                 .authenticated()

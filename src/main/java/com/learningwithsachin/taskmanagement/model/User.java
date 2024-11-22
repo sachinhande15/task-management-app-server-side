@@ -48,7 +48,10 @@ public class User {
     @Column(nullable = false)
     private final Role role;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @Column(name = "profile_image")
+    private String profileImage;
+
+    @OneToMany(mappedBy = "user",  fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Task> tasks = new HashSet<>();
 
@@ -112,5 +115,13 @@ public class User {
 
     public void setTasks(Set<Task> tasks) {
         this.tasks = tasks;
+    }
+
+    public String getProfileImage () {
+        return profileImage;
+    }
+
+    public void setProfileImage (String profileImage) {
+        this.profileImage = profileImage;
     }
 }
